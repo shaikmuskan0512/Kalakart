@@ -18,7 +18,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: true,
     credentials: true,
   })
 );
@@ -48,24 +48,30 @@ app.get("/", (req, res) => {
 // SERVER
 // ==========================================
 
-const PORT = 5000;
+// Render provides PORT through environment variables.
+// 5000 is used when running locally.
+const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    // Check MongoDB connection string
     if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is missing in .env");
+      throw new Error("MONGO_URI is missing in environment variables");
     }
 
+    // Check JWT secret
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is missing in .env");
+      throw new Error("JWT_SECRET is missing in environment variables");
     }
 
+    // Connect to MongoDB Atlas
     await mongoose.connect(process.env.MONGO_URI);
 
     console.log("MongoDB connected successfully");
 
+    // Start Express server
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`KalaKart backend running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Server startup failed:", error.message);
