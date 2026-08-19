@@ -1,0 +1,64 @@
+.artisan-section {
+  padding: 100px 0;
+  background: var(--brown);
+}
+
+.artisan-section__grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.artisan-section__image img {
+  width: 100%;
+  height: 480px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.artisan-section__text {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--ivory);
+}
+
+.artisan-section__text .eyebrow {
+  color: var(--gold-tint);
+}
+
+.artisan-section__text .eyebrow::before {
+  background: var(--gold-tint);
+}
+
+.artisan-section__text h2 {
+  color: var(--ivory);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+}
+
+.artisan-section__text p {
+  color: rgba(245, 239, 227, 0.75);
+  font-size: 16px;
+  line-height: 1.75;
+  max-width: 480px;
+}
+
+.artisan-section__text .btn {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+@media (max-width: 860px) {
+  .artisan-section__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .artisan-section__image img {
+    height: 320px;
+  }
+  .artisan-section {
+    padding: 70px 0;
+  }
+}

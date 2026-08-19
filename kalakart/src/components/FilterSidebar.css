@@ -1,0 +1,163 @@
+.filters {
+  width: 100%;
+  color: #332c27;
+}
+
+.filters__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.filters__header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.filters__clear {
+  border: none;
+  background: none;
+  color: #8b5e3c;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.filters__group {
+  margin-bottom: 35px;
+}
+
+.filters__group h4 {
+  margin: 0 0 15px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #777;
+}
+
+.filters__group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filters__group li {
+  margin-bottom: 7px;
+}
+
+.filters__group li button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.filters__group li button:hover {
+  color: #8b5e3c;
+}
+
+.filters__group li button.is-active {
+  color: #8b5e3c;
+  font-weight: 600;
+}
+
+.filters__slider {
+  width: 100%;
+  cursor: pointer;
+}
+
+.filters__price-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #777;
+}
+
+.filters__states label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.filters__states input {
+  accent-color: #8b5e3c;
+}
+
+/* DRAWER */
+
+.filter-drawer__backdrop {
+  display: none;
+}
+
+.filter-drawer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .filter-drawer__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 90;
+  }
+
+  .filter-drawer__backdrop.is-open {
+    display: block;
+  }
+
+  .filter-drawer {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(340px, 90vw);
+    background: #fff;
+    z-index: 100;
+    padding: 25px;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .filter-drawer.is-open {
+    transform: translateX(0);
+  }
+
+  .filter-drawer__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+
+  .filter-drawer__header h3 {
+    margin: 0;
+  }
+
+  .filter-drawer__header button {
+    border: none;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .filter-drawer__apply {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    border: none;
+    background: #8b5e3c;
+    color: white;
+    cursor: pointer;
+  }
+}

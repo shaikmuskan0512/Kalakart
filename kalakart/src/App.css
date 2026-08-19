@@ -1,0 +1,15 @@
+#root {
+  overflow-x: hidden;
+}
+
+/* Give every major section a consistent horizontal rhythm against the
+   ivory background, and alternate the intro-stats block onto a slightly
+   deeper tone so the page has gentle contrast without extra colour. */
+.intro-stats,
+.why-kalakart {
+  background: var(--ivory);
+}
+
+.regional-crafts {
+  background: var(--ivory-deep);
+}
