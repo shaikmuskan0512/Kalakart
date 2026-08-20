@@ -2,14 +2,16 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-     productId: {
+    productId: {
       type: Number,
       required: true,
       unique: true,
     },
+
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     description: {
@@ -30,11 +32,13 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
     },
 
     state: {
       type: String,
       required: true,
+      trim: true,
     },
 
     rating: {
@@ -57,6 +61,10 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-const Product = mongoose.model("Product", productSchema);
+// IMPORTANT:
+// Prevent OverwriteModelError
+const Product =
+  mongoose.models.Product ||
+  mongoose.model("Product", productSchema);
 
 export default Product;
