@@ -42,7 +42,9 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
 
-    if (!savedUser) return null;
+    if (!savedUser) {
+      return null;
+    }
 
     try {
       return JSON.parse(savedUser);
@@ -180,7 +182,13 @@ export function AppProvider({ children }) {
     if (
       contentType.includes("application/json")
     ) {
-      return await response.json();
+      try {
+        return await response.json();
+      } catch {
+        return {
+          message: "Invalid JSON response from server",
+        };
+      }
     }
 
     const text = await response.text();
@@ -329,7 +337,7 @@ export function AppProvider({ children }) {
   }, []);
 
   // ==========================================
-  // FORMAT CART
+  // FORMAT BACKEND CART
   // ==========================================
 
   const formatCart = useCallback(
@@ -459,7 +467,10 @@ export function AppProvider({ children }) {
           product.id ??
           product._id;
 
-        if (!productId) {
+        if (
+          productId === undefined ||
+          productId === null
+        ) {
           throw new Error(
             "Invalid product ID"
           );
@@ -549,7 +560,9 @@ export function AppProvider({ children }) {
   const removeFromCart =
     useCallback(
       async (id) => {
-        if (!userId) return;
+        if (!userId) {
+          return;
+        }
 
         if (
           id === undefined ||
@@ -698,7 +711,9 @@ export function AppProvider({ children }) {
   const updateQty =
     useCallback(
       async (id, delta) => {
-        if (!userId) return;
+        if (!userId) {
+          return;
+        }
 
         if (
           id === undefined ||
@@ -790,7 +805,101 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
+  // CART ITEMS
+  // IMPORTANT:
+  // This MUST come BEFORE placeOrder
+  // ==========================================
+
+  const cartItems = useMemo(() => {
+    return cart
+      .map((item) => {
+        const product =
+          allProducts.find(
+            (p) =>
+              String(
+                p.productId ??
+                  p.id ??
+                  p._id
+              ) ===
+              String(item.id)
+          );
+
+        if (!product) {
+          return null;
+        }
+
+        return {
+          ...product,
+          qty: Number(item.qty || 1),
+        };
+      })
+      .filter(Boolean);
+  }, [
+    cart,
+    allProducts,
+  ]);
+
+  // ==========================================
+  // WISHLIST ITEMS
+  // ==========================================
+
+  const wishlistItems = useMemo(() => {
+    return allProducts.filter(
+      (product) =>
+        wishlist.some(
+          (id) =>
+            String(id) ===
+            String(
+              product.productId ??
+                product.id ??
+                product._id
+            )
+        )
+    );
+  }, [
+    wishlist,
+    allProducts,
+  ]);
+
+  // ==========================================
+  // CART COUNT
+  // ==========================================
+
+  const cartCount = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total +
+        Number(item.qty || 0),
+      0
+    );
+  }, [cart]);
+
+  // ==========================================
+  // WISHLIST COUNT
+  // ==========================================
+
+  const wishlistCount = useMemo(() => {
+    return wishlist.length;
+  }, [wishlist]);
+
+  // ==========================================
+  // CART SUBTOTAL
+  // ==========================================
+
+  const cartSubtotal = useMemo(() => {
+    return cartItems.reduce(
+      (total, item) =>
+        total +
+        Number(item.price || 0) *
+          Number(item.qty || 0),
+      0
+    );
+  }, [cartItems]);
+
+  // ==========================================
   // PLACE ORDER
+  // IMPORTANT:
+  // cartItems is now already initialized
   // ==========================================
 
   const placeOrder = useCallback(
@@ -828,6 +937,11 @@ export function AppProvider({ children }) {
         );
 
         console.log(
+          "CART ITEMS:",
+          cartItems
+        );
+
+        console.log(
           "ORDER DATA:",
           orderData
         );
@@ -836,20 +950,36 @@ export function AppProvider({ children }) {
           "================================"
         );
 
+        // ======================================
+        // CREATE ORDER ITEMS
+        // ======================================
+
         const items = cartItems.map(
-          (item) => ({
-            product:
-              item._id ||
-              item.productId ||
-              item.id,
+          (item) => {
+            const mongoProductId =
+              item._id;
 
-            quantity:
-              Number(item.qty || 1),
+            if (!mongoProductId) {
+              throw new Error(
+                `Product "${item.name}" is missing MongoDB _id`
+              );
+            }
 
-            price:
-              Number(item.price || 0),
-          })
+            return {
+              product: mongoProductId,
+
+              quantity:
+                Number(item.qty || 1),
+
+              price:
+                Number(item.price || 0),
+            };
+          }
         );
+
+        // ======================================
+        // TOTAL
+        // ======================================
 
         const totalAmount =
           items.reduce(
@@ -860,13 +990,30 @@ export function AppProvider({ children }) {
             0
           );
 
+        // ======================================
+        // ADDRESS
+        // ======================================
+
+        const shippingAddress =
+          orderData.shippingAddress ||
+          orderData.address;
+
+        if (!shippingAddress) {
+          throw new Error(
+            "Shipping address is required"
+          );
+        }
+
+        // ======================================
+        // PAYLOAD
+        // ======================================
+
         const payload = {
           items,
+
           totalAmount,
 
-          shippingAddress:
-            orderData.shippingAddress ||
-            orderData.address,
+          shippingAddress,
 
           paymentMethod:
             orderData.paymentMethod ||
@@ -877,6 +1024,10 @@ export function AppProvider({ children }) {
           "FINAL ORDER PAYLOAD:",
           payload
         );
+
+        // ======================================
+        // SEND ORDER TO RENDER
+        // ======================================
 
         const response =
           await fetch(
@@ -914,14 +1065,22 @@ export function AppProvider({ children }) {
           data
         );
 
+        // ======================================
+        // HANDLE ERROR
+        // ======================================
+
         if (!response.ok) {
           throw new Error(
             data.message ||
+              data.error ||
               `Order failed (${response.status})`
           );
         }
 
-        // Clear frontend cart
+        // ======================================
+        // SUCCESS
+        // ======================================
+
         setCart([]);
 
         setCheckoutOpen(false);
@@ -957,12 +1116,21 @@ export function AppProvider({ children }) {
   const toggleWishlist =
     useCallback(
       (product) => {
-        if (!product) return;
+        if (!product) {
+          return;
+        }
 
         const productId =
           product.productId ??
           product.id ??
           product._id;
+
+        if (
+          productId === undefined ||
+          productId === null
+        ) {
+          return;
+        }
 
         setWishlist((prev) => {
           const exists =
@@ -1059,97 +1227,6 @@ export function AppProvider({ children }) {
     }, [showToast]);
 
   // ==========================================
-  // CART ITEMS
-  // ==========================================
-
-  const cartItems = useMemo(() => {
-    return cart
-      .map((item) => {
-        const product =
-          allProducts.find(
-            (p) =>
-              String(
-                p.productId ??
-                  p.id ??
-                  p._id
-              ) ===
-              String(item.id)
-          );
-
-        if (!product) return null;
-
-        return {
-          ...product,
-          qty: item.qty,
-        };
-      })
-      .filter(Boolean);
-  }, [
-    cart,
-    allProducts,
-  ]);
-
-  // ==========================================
-  // WISHLIST ITEMS
-  // ==========================================
-
-  const wishlistItems =
-    useMemo(() => {
-      return allProducts.filter(
-        (product) =>
-          wishlist.some(
-            (id) =>
-              String(id) ===
-              String(
-                product.productId ??
-                  product.id ??
-                  product._id
-              )
-          )
-      );
-    }, [
-      wishlist,
-      allProducts,
-    ]);
-
-  // ==========================================
-  // CART COUNT
-  // ==========================================
-
-  const cartCount = useMemo(() => {
-    return cart.reduce(
-      (total, item) =>
-        total +
-        Number(item.qty || 0),
-      0
-    );
-  }, [cart]);
-
-  // ==========================================
-  // WISHLIST COUNT
-  // ==========================================
-
-  const wishlistCount =
-    useMemo(() => {
-      return wishlist.length;
-    }, [wishlist]);
-
-  // ==========================================
-  // CART SUBTOTAL
-  // ==========================================
-
-  const cartSubtotal =
-    useMemo(() => {
-      return cartItems.reduce(
-        (total, item) =>
-          total +
-          Number(item.price || 0) *
-            Number(item.qty || 0),
-        0
-      );
-    }, [cartItems]);
-
-  // ==========================================
   // FILTERED PRODUCTS
   // ==========================================
 
@@ -1159,7 +1236,9 @@ export function AppProvider({ children }) {
         ...allProducts,
       ];
 
+      // ======================================
       // SEARCH
+      // ======================================
 
       if (search.trim()) {
         const q =
@@ -1192,63 +1271,69 @@ export function AppProvider({ children }) {
         );
       }
 
+      // ======================================
       // CATEGORY
+      // ======================================
 
       if (
         activeCategory !== "all"
       ) {
-        list =
-          list.filter(
-            (product) =>
-              String(
-                product.category || ""
-              ).toLowerCase() ===
-              String(
-                activeCategory
-              ).toLowerCase()
-          );
+        list = list.filter(
+          (product) =>
+            String(
+              product.category || ""
+            ).toLowerCase() ===
+            String(
+              activeCategory
+            ).toLowerCase()
+        );
       }
 
+      // ======================================
       // PRICE
+      // ======================================
 
-      list =
-        list.filter(
-          (product) =>
-            Number(
-              product.price || 0
-            ) <=
-            Number(
-              maxPrice || 10000
-            )
-        );
+      list = list.filter(
+        (product) =>
+          Number(
+            product.price || 0
+          ) <=
+          Number(
+            maxPrice || 10000
+          )
+      );
 
+      // ======================================
       // STATES
+      // ======================================
 
       if (
         activeStates.length > 0
       ) {
-        list =
-          list.filter(
-            (product) =>
-              activeStates.includes(
-                product.state
-              )
-          );
+        list = list.filter(
+          (product) =>
+            activeStates.includes(
+              product.state
+            )
+        );
       }
 
+      // ======================================
       // RATING
+      // ======================================
 
       if (minRating > 0) {
-        list =
-          list.filter(
-            (product) =>
-              Number(
-                product.rating || 0
-              ) >= minRating
-          );
+        list = list.filter(
+          (product) =>
+            Number(
+              product.rating || 0
+            ) >= minRating
+        );
       }
 
+      // ======================================
       // SORT
+      // ======================================
 
       switch (sortBy) {
         case "price-asc":
@@ -1279,6 +1364,7 @@ export function AppProvider({ children }) {
           list.reverse();
           break;
 
+        case "recommended":
         default:
           break;
       }
@@ -1295,7 +1381,7 @@ export function AppProvider({ children }) {
     ]);
 
   // ==========================================
-  // FILTER FUNCTIONS
+  // STATE FILTER
   // ==========================================
 
   const toggleStateFilter =
@@ -1322,13 +1408,22 @@ export function AppProvider({ children }) {
       []
     );
 
+  // ==========================================
+  // CLEAR FILTERS
+  // ==========================================
+
   const clearFilters =
     useCallback(() => {
       setActiveCategory("all");
+
       setMaxPrice(10000);
+
       setActiveStates([]);
+
       setMinRating(0);
+
       setSortBy("recommended");
+
       setSearch("");
     }, []);
 
@@ -1351,13 +1446,17 @@ export function AppProvider({ children }) {
       );
 
       setToken(null);
+
       setUserId(null);
+
       setUser(null);
 
       setCart([]);
+
       setWishlist([]);
 
       setCartOpen(false);
+
       setCheckoutOpen(false);
     }, []);
 
@@ -1415,15 +1514,21 @@ export function AppProvider({ children }) {
     // FILTERS
     activeCategory,
     setActiveCategory,
+
     maxPrice,
     setMaxPrice,
+
     activeStates,
     toggleStateFilter,
+
     minRating,
     setMinRating,
+
     sortBy,
     setSortBy,
+
     clearFilters,
+
     filterDrawerOpen,
     setFilterDrawerOpen,
 
@@ -1434,9 +1539,7 @@ export function AppProvider({ children }) {
   };
 
   return (
-    <AppContext.Provider
-      value={value}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
