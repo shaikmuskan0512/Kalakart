@@ -1,40 +1,66 @@
-import { useApp } from '../store'
-import FilterSidebar from './FilterSidebar'
-import ProductCard from './ProductCard'
-import useReveal from '../useReveal'
-import './ProductSection.css'
+import { useApp } from "../store";
+import FilterSidebar from "./FilterSidebar";
+import ProductCard from "./ProductCard";
+import useReveal from "../useReveal";
+import "./ProductSection.css";
 
-export default function ProductSection() {
+function ProductSection() {
   const {
     filteredProducts,
     sortBy,
     setSortBy,
     setFilterDrawerOpen,
-    search
-  } = useApp()
+    search,
+  } = useApp();
 
-  const headRef = useReveal()
+  const headRef = useReveal();
 
   return (
     <section className="product-section">
-      <div className="product-section__heading" ref={headRef}>
-        <h2>Featured Collection</h2>
+
+      {/* ==========================================
+          HEADING
+      ========================================== */}
+
+      <div
+        className="product-section__heading"
+        ref={headRef}
+      >
+        <h2>
+          Featured Collection
+        </h2>
 
         <p>
-          Handpicked treasures created by India's skilled artisans.
-          Every piece is sourced directly from the artisan or craft
+          Handpicked treasures created by India's
+          skilled artisans. Every piece is sourced
+          directly from the artisan or craft
           collective that made it.
         </p>
       </div>
 
+      {/* ==========================================
+          PRODUCTS LAYOUT
+      ========================================== */}
+
       <div className="product-section__layout">
+
+        {/* FILTER SIDEBAR */}
+
         <FilterSidebar variant="sidebar" />
 
+        {/* PRODUCTS */}
+
         <div className="product-section__main">
+
+          {/* TOOLBAR */}
+
           <div className="product-section__toolbar">
+
             <button
               className="product-section__filter-btn"
-              onClick={() => setFilterDrawerOpen(true)}
+              onClick={() =>
+                setFilterDrawerOpen(true)
+              }
             >
               Filters
             </button>
@@ -46,40 +72,89 @@ export default function ProductSection() {
             <select
               className="product-section__sort"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) =>
+                setSortBy(e.target.value)
+              }
             >
-              <option value="recommended">Recommended</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Rating</option>
-              <option value="newest">Newest</option>
+              <option value="recommended">
+                Recommended
+              </option>
+
+              <option value="price-asc">
+                Price: Low to High
+              </option>
+
+              <option value="price-desc">
+                Price: High to Low
+              </option>
+
+              <option value="rating">
+                Rating
+              </option>
+
+              <option value="newest">
+                Newest
+              </option>
             </select>
+
           </div>
 
-          {filteredProducts.length > 0 ? (
+          {/* ==========================================
+              PRODUCT GRID
+          ========================================== */}
+
+          {filteredProducts &&
+          filteredProducts.length > 0 ? (
+
             <div className="product-grid">
-              {filteredProducts.map((p) => (
+
+              {filteredProducts.map((product) => (
+
                 <ProductCard
-                  key={p._id || p.id}
-                  product={p}
+                  key={
+                    product._id ||
+                    product.productId ||
+                    product.id
+                  }
+                  product={product}
                 />
+
               ))}
+
             </div>
+
           ) : (
+
+            /* ==========================================
+               EMPTY STATE
+            ========================================== */
+
             <div className="product-empty">
-              <h3>No treasures found</h3>
+
+              <h3>
+                No treasures found
+              </h3>
 
               <p>
                 {search
-                  ? 'Try searching for another craft or category.'
-                  : 'No products are available right now.'}
+                  ? "Try searching for another craft or category."
+                  : "No products are available right now."}
               </p>
+
             </div>
+
           )}
+
         </div>
+
       </div>
 
+      {/* MOBILE FILTER DRAWER */}
+
       <FilterSidebar variant="drawer" />
+
     </section>
-  )
+  );
 }
+
+export default ProductSection;

@@ -3,27 +3,34 @@ import './Hero.css'
 
 const SLIDES = [
   {
-    image: 'https://www.jdinstitute.edu.in/the-history-of-handloom-weaving-through-the-ages/',
-    tag: 'The Weaver\'s Loom',
-    caption: 'Every saree begins on a wooden loom, thread by patient thread.',
+    image:
+      "https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=1600&q=85",
+    tag: "The Weaver's Loom",
+    caption:
+      "Every saree begins on a wooden loom, thread by patient thread.",
   },
   {
-    image: 'https://theuseeshop.com/products/maroon-warm-silk-banarasi-katbandh-saree?srsltid=AfmBOopZpsODcIXxd4eG3JpJjIKOzONKaJXQym_plp0ia69uofV6Uv1J',
-    tag: 'Silk & Zari',
-    caption: 'Banarasi and Kanchipuram weaves, brocaded with real zari.',
+    image:
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600&q=85",
+    tag: "Silk & Zari",
+    caption:
+      "Banarasi and Kanchipuram weaves, brocaded with real zari.",
   },
   {
-    image: 'https://loremflickr.com/1600/900/indian,artisan,craft?lock=203',
-    tag: 'Hands That Remember',
-    caption: 'Artisans carrying techniques passed down for generations.',
-  },
+  image:
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1600&q=85",
+  tag: "Hands That Remember",
+  caption:
+    "Artisans carrying techniques passed down for generations.",
+},
   {
-    image: 'https://loremflickr.com/1600/900/pottery,terracotta,india?lock=204',
-    tag: 'Earth & Fire',
-    caption: 'Terracotta and blue pottery, shaped on the wheel by hand.',
-  },
-]
-
+  image:
+    "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1600&q=85",
+  tag: "Earth & Fire",
+  caption:
+    "Terracotta and blue pottery, shaped on the wheel by hand.",
+},
+];
 export default function Hero() {
   const [index, setIndex] = useState(0)
   const timerRef = useRef(null)

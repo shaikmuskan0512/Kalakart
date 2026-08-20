@@ -8,8 +8,6 @@ import {
   useEffect,
 } from "react";
 
-import { products as allProducts } from "./data/products";
-
 const AppContext = createContext(null);
 
 // ==========================================
@@ -23,6 +21,11 @@ const API_URL = "http://localhost:5000";
 // ==========================================
 
 export function AppProvider({ children }) {
+  // ==========================================
+  // PRODUCTS FROM MONGODB
+  // ==========================================
+
+  const [allProducts, setAllProducts] = useState([]);
 
   // ==========================================
   // AUTHENTICATION
@@ -37,8 +40,7 @@ export function AppProvider({ children }) {
   });
 
   const [user, setUser] = useState(() => {
-    const savedUser =
-      localStorage.getItem("user");
+    const savedUser = localStorage.getItem("user");
 
     if (!savedUser) {
       return null;
@@ -58,25 +60,12 @@ export function AppProvider({ children }) {
   // ==========================================
 
   const login = useCallback(
-    (
-      loginToken,
-      loginUser = null,
-      loginUserId = null
-    ) => {
-
-      localStorage.setItem(
-        "token",
-        loginToken
-      );
-
+    (loginToken, loginUser = null, loginUserId = null) => {
+      localStorage.setItem("token", loginToken);
       setToken(loginToken);
 
       if (loginUserId) {
-        localStorage.setItem(
-          "userId",
-          loginUserId
-        );
-
+        localStorage.setItem("userId", loginUserId);
         setUserId(loginUserId);
       }
 
@@ -98,36 +87,26 @@ export function AppProvider({ children }) {
 
   const [cart, setCart] = useState([]);
 
-  const [cartOpen, setCartOpen] =
-    useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
-  // Kept for compatibility with
-  // any old components.
-  const [checkoutOpen, setCheckoutOpen] =
-    useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // ==========================================
   // WISHLIST
   // ==========================================
 
-  const [wishlist, setWishlist] =
-    useState(() => {
+  const [wishlist, setWishlist] = useState(() => {
+    try {
+      const savedWishlist =
+        localStorage.getItem("wishlist");
 
-      try {
-        const savedWishlist =
-          localStorage.getItem(
-            "wishlist"
-          );
-
-        return savedWishlist
-          ? JSON.parse(savedWishlist)
-          : [];
-
-      } catch {
-        return [];
-      }
-
-    });
+      return savedWishlist
+        ? JSON.parse(savedWishlist)
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [wishlistOpen, setWishlistOpen] =
     useState(false);
@@ -136,8 +115,7 @@ export function AppProvider({ children }) {
   // SEARCH & FILTERS
   // ==========================================
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
   const [activeCategory, setActiveCategory] =
     useState("all");
@@ -161,79 +139,233 @@ export function AppProvider({ children }) {
   // TOAST
   // ==========================================
 
-  const [toasts, setToasts] =
-    useState([]);
+  const [toasts, setToasts] = useState([]);
 
   const toastId = useRef(0);
 
-  const showToast = useCallback(
-    (message) => {
+  const showToast = useCallback((message) => {
+    const id = ++toastId.current;
 
-      const id =
-        ++toastId.current;
+    setToasts((prev) => [
+      ...prev,
+      {
+        id,
+        message,
+      },
+    ]);
 
-      setToasts((prev) => [
-        ...prev,
-        {
-          id,
-          message,
-        },
-      ]);
-
-      setTimeout(() => {
-        setToasts((prev) =>
-          prev.filter(
-            (toast) =>
-              toast.id !== id
-          )
-        );
-      }, 2800);
-
-    },
-    []
-  );
-
-  const dismissToast =
-    useCallback((id) => {
-
+    setTimeout(() => {
       setToasts((prev) =>
         prev.filter(
-          (toast) =>
-            toast.id !== id
+          (toast) => toast.id !== id
         )
       );
+    }, 2800);
+  }, []);
 
-    }, []);
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) =>
+      prev.filter(
+        (toast) => toast.id !== id
+      )
+    );
+  }, []);
 
   // ==========================================
   // RESPONSE HELPER
   // ==========================================
 
-  const getResponseData =
-    async (response) => {
+  const getResponseData = async (response) => {
+    const contentType =
+      response.headers.get("content-type") || "";
 
-      const contentType =
-        response.headers.get(
-          "content-type"
-        ) || "";
+    if (
+      contentType.includes("application/json")
+    ) {
+      return await response.json();
+    }
 
-      if (
-        contentType.includes(
-          "application/json"
-        )
-      ) {
-        return await response.json();
-      }
+    const text = await response.text();
 
-      const text =
-        await response.text();
-
-      return {
-        message:
-          text ||
-          `Server returned ${response.status}`,
-      };
+    return {
+      message:
+        text ||
+        `Server returned ${response.status}`,
     };
+  };
+
+  // ==========================================
+  // LOAD PRODUCTS FROM MONGODB
+  // ==========================================
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      console.log(
+        "================================"
+      );
+
+      console.log(
+        "LOADING PRODUCTS FROM MONGODB"
+      );
+
+      console.log(
+        "PRODUCT API:",
+        `${API_URL}/api/products`
+      );
+
+      console.log(
+        "================================"
+      );
+
+      try {
+        const response = await fetch(
+          `${API_URL}/api/products`,
+          {
+            method: "GET",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+          }
+        );
+
+        console.log(
+          "PRODUCT RESPONSE STATUS:",
+          response.status
+        );
+
+        console.log(
+          "PRODUCT RESPONSE OK:",
+          response.ok
+        );
+
+        const data =
+          await getResponseData(response);
+
+        console.log(
+          "PRODUCTS RESPONSE:",
+          data
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              `Failed to fetch products (${response.status})`
+          );
+        }
+
+        // ======================================
+        // HANDLE DIFFERENT API RESPONSE FORMATS
+        // ======================================
+
+        let productsData = [];
+
+        if (Array.isArray(data)) {
+          productsData = data;
+        } else if (
+          Array.isArray(data.products)
+        ) {
+          productsData = data.products;
+        } else if (
+          Array.isArray(data.data)
+        ) {
+          productsData = data.data;
+        }
+
+        console.log(
+          "PRODUCT ARRAY:",
+          productsData
+        );
+
+        console.log(
+          "PRODUCT COUNT:",
+          productsData.length
+        );
+
+        // ======================================
+        // NORMALIZE PRODUCTS
+        // ======================================
+
+        const normalizedProducts =
+          productsData.map((product) => ({
+            ...product,
+
+            id:
+              product.productId ??
+              product.id ??
+              product._id,
+
+            productId:
+              product.productId ??
+              product.id ??
+              product._id,
+
+            name:
+              product.name || "Unnamed Product",
+
+            description:
+              product.description || "",
+
+            price:
+              Number(product.price || 0),
+
+            originalPrice:
+              Number(
+                product.originalPrice ||
+                  product.price ||
+                  0
+              ),
+
+            category:
+              product.category || "",
+
+            state:
+              product.state || "",
+
+            rating:
+              Number(product.rating || 0),
+
+            image:
+              product.image || "",
+
+            stock:
+              Number(product.stock || 0),
+          }));
+
+        console.log(
+          "NORMALIZED PRODUCTS:",
+          normalizedProducts
+        );
+
+        console.log(
+          "FINAL PRODUCT COUNT:",
+          normalizedProducts.length
+        );
+
+        setAllProducts(
+          normalizedProducts
+        );
+      } catch (error) {
+        console.error(
+          "================================"
+        );
+
+        console.error(
+          "PRODUCT LOAD ERROR:",
+          error
+        );
+
+        console.error(
+          "================================"
+        );
+
+        setAllProducts([]);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   // ==========================================
   // FORMAT BACKEND CART
@@ -241,12 +373,9 @@ export function AppProvider({ children }) {
 
   const formatCart = useCallback(
     (items = []) => {
-
       return items
         .map((item) => {
-
-          const product =
-            item.product;
+          const product = item.product;
 
           if (!product) {
             return null;
@@ -262,7 +391,6 @@ export function AppProvider({ children }) {
               item.quantity || 1
             ),
           };
-
         })
         .filter(
           (item) =>
@@ -270,7 +398,6 @@ export function AppProvider({ children }) {
             item.id !== undefined &&
             item.id !== null
         );
-
     },
     []
   );
@@ -280,80 +407,68 @@ export function AppProvider({ children }) {
   // ==========================================
 
   useEffect(() => {
+    const loadCart = async () => {
+      if (!userId) {
+        setCart([]);
+        return;
+      }
 
-    const loadCart =
-      async () => {
+      try {
+        console.log(
+          "Loading cart for user:",
+          userId
+        );
 
-        if (!userId) {
-          setCart([]);
-          return;
-        }
+        const response = await fetch(
+          `${API_URL}/api/cart/${userId}`,
+          {
+            method: "GET",
 
-        try {
+            headers: {
+              "Content-Type":
+                "application/json",
 
-          console.log(
-            "Loading cart for user:",
-            userId
-          );
-
-          const response =
-            await fetch(
-              `${API_URL}/api/cart/${userId}`,
-              {
-                method: "GET",
-
-                headers: {
-                  "Content-Type":
-                    "application/json",
-
-                  ...(token
-                    ? {
-                        Authorization:
-                          `Bearer ${token}`,
-                      }
-                    : {}),
-                },
-              }
-            );
-
-          const data =
-            await getResponseData(
-              response
-            );
-
-          console.log(
-            "CART LOAD RESPONSE:",
-            data
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              data.message ||
-                "Failed to fetch cart"
-            );
+              ...(token
+                ? {
+                    Authorization:
+                      `Bearer ${token}`,
+                  }
+                : {}),
+            },
           }
+        );
 
-          setCart(
-            formatCart(
-              data.items || []
-            )
+        const data =
+          await getResponseData(response);
+
+        console.log(
+          "CART LOAD RESPONSE:",
+          data
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to fetch cart"
           );
-
-        } catch (error) {
-
-          console.error(
-            "Load cart error:",
-            error
-          );
-
-          setCart([]);
-
         }
 
-      };
+        setCart(
+          formatCart(
+            data.items || []
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Load cart error:",
+          error
+        );
+
+        setCart([]);
+      }
+    };
 
     loadCart();
-
   }, [
     userId,
     token,
@@ -364,108 +479,99 @@ export function AppProvider({ children }) {
   // CART - ADD
   // ==========================================
 
-  const addToCart =
-    useCallback(
-      async (product) => {
+  const addToCart = useCallback(
+    async (product) => {
+      if (!product) {
+        return;
+      }
 
-        if (!product) {
-          return;
-        }
+      if (!userId) {
+        showToast(
+          "Please login first"
+        );
 
-        if (!userId) {
+        return;
+      }
 
-          showToast(
-            "Please login first"
+      try {
+        const productId =
+          product.productId ??
+          product.id ??
+          product._id;
+
+        console.log(
+          "Adding product:",
+          productId
+        );
+
+        const response =
+          await fetch(
+            `${API_URL}/api/cart/${userId}`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                ...(token
+                  ? {
+                      Authorization:
+                        `Bearer ${token}`,
+                    }
+                  : {}),
+              },
+
+              body: JSON.stringify({
+                productId,
+                quantity: 1,
+              }),
+            }
           );
 
-          return;
-        }
+        const data =
+          await getResponseData(response);
 
-        try {
+        console.log(
+          "ADD CART RESPONSE:",
+          data
+        );
 
-          console.log(
-            "Adding product:",
-            product.id
-          );
-
-          const response =
-            await fetch(
-              `${API_URL}/api/cart/${userId}`,
-              {
-                method: "POST",
-
-                headers: {
-                  "Content-Type":
-                    "application/json",
-
-                  ...(token
-                    ? {
-                        Authorization:
-                          `Bearer ${token}`,
-                      }
-                    : {}),
-                },
-
-                body: JSON.stringify({
-                  productId:
-                    product.id,
-
-                  quantity: 1,
-                }),
-              }
-            );
-
-          const data =
-            await getResponseData(
-              response
-            );
-
-          console.log(
-            "ADD CART RESPONSE:",
-            data
-          );
-
-          if (!response.ok) {
-
-            throw new Error(
-              data.message ||
-                "Failed to add to cart"
-            );
-
-          }
-
-          setCart(
-            formatCart(
-              data.items || []
-            )
-          );
-
-          showToast(
-            "✓ Added to cart"
-          );
-
-        } catch (error) {
-
-          console.error(
-            "Add to cart error:",
-            error
-          );
-
-          showToast(
-            error.message ||
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
               "Failed to add to cart"
           );
-
         }
 
-      },
-      [
-        userId,
-        token,
-        showToast,
-        formatCart,
-      ]
-    );
+        setCart(
+          formatCart(
+            data.items || []
+          )
+        );
+
+        showToast(
+          "✓ Added to cart"
+        );
+      } catch (error) {
+        console.error(
+          "Add to cart error:",
+          error
+        );
+
+        showToast(
+          error.message ||
+            "Failed to add to cart"
+        );
+      }
+    },
+    [
+      userId,
+      token,
+      showToast,
+      formatCart,
+    ]
+  );
 
   // ==========================================
   // CART - REMOVE
@@ -474,18 +580,26 @@ export function AppProvider({ children }) {
   const removeFromCart =
     useCallback(
       async (id) => {
-
         if (!userId) {
           return;
         }
 
-        try {
-
-          console.log(
-            "Removing product:",
-            id
+        if (
+          id === undefined ||
+          id === null
+        ) {
+          console.error(
+            "Cannot remove cart item: ID is undefined"
           );
 
+          showToast(
+            "Invalid product"
+          );
+
+          return;
+        }
+
+        try {
           const response =
             await fetch(
               `${API_URL}/api/cart/${userId}/${id}`,
@@ -504,22 +618,13 @@ export function AppProvider({ children }) {
             );
 
           const data =
-            await getResponseData(
-              response
-            );
-
-          console.log(
-            "REMOVE CART RESPONSE:",
-            data
-          );
+            await getResponseData(response);
 
           if (!response.ok) {
-
             throw new Error(
               data.message ||
                 "Failed to remove from cart"
             );
-
           }
 
           setCart(
@@ -531,9 +636,7 @@ export function AppProvider({ children }) {
           showToast(
             "✓ Removed from cart"
           );
-
         } catch (error) {
-
           console.error(
             "Remove cart error:",
             error
@@ -543,9 +646,7 @@ export function AppProvider({ children }) {
             error.message ||
               "Failed to remove from cart"
           );
-
         }
-
       },
       [
         userId,
@@ -562,9 +663,6 @@ export function AppProvider({ children }) {
   const clearCart =
     useCallback(
       async () => {
-
-        // Immediately clear frontend
-        // so the UI becomes empty.
         setCart([]);
 
         if (!userId) {
@@ -572,7 +670,6 @@ export function AppProvider({ children }) {
         }
 
         try {
-
           const response =
             await fetch(
               `${API_URL}/api/cart/${userId}/clear`,
@@ -591,37 +688,24 @@ export function AppProvider({ children }) {
             );
 
           const data =
-            await getResponseData(
-              response
-            );
-
-          console.log(
-            "CLEAR CART RESPONSE:",
-            data
-          );
+            await getResponseData(response);
 
           if (!response.ok) {
-
             throw new Error(
               data.message ||
                 "Failed to clear cart"
             );
-
           }
 
           setCart([]);
 
           return true;
-
         } catch (error) {
-
           console.error(
             "Clear cart error:",
             error
           );
 
-          // Keep frontend cart empty
-          // even if backend clear fails.
           setCart([]);
 
           showToast(
@@ -631,7 +715,6 @@ export function AppProvider({ children }) {
 
           return false;
         }
-
       },
       [
         userId,
@@ -647,8 +730,18 @@ export function AppProvider({ children }) {
   const updateQty =
     useCallback(
       async (id, delta) => {
-
         if (!userId) {
+          return;
+        }
+
+        if (
+          id === undefined ||
+          id === null
+        ) {
+          console.error(
+            "Cannot update cart: ID is undefined"
+          );
+
           return;
         }
 
@@ -660,20 +753,22 @@ export function AppProvider({ children }) {
           );
 
         if (!currentItem) {
+          console.error(
+            "Cart item not found:",
+            id
+          );
+
           return;
         }
 
         const newQty =
           Math.max(
             1,
-            Number(
-              currentItem.qty
-            ) +
+            Number(currentItem.qty) +
               Number(delta)
           );
 
         try {
-
           const response =
             await fetch(
               `${API_URL}/api/cart/${userId}/${id}`,
@@ -693,29 +788,19 @@ export function AppProvider({ children }) {
                 },
 
                 body: JSON.stringify({
-                  quantity:
-                    newQty,
+                  quantity: newQty,
                 }),
               }
             );
 
           const data =
-            await getResponseData(
-              response
-            );
-
-          console.log(
-            "UPDATE CART RESPONSE:",
-            data
-          );
+            await getResponseData(response);
 
           if (!response.ok) {
-
             throw new Error(
               data.message ||
                 "Failed to update quantity"
             );
-
           }
 
           setCart(
@@ -723,9 +808,7 @@ export function AppProvider({ children }) {
               data.items || []
             )
           );
-
         } catch (error) {
-
           console.error(
             "Update quantity error:",
             error
@@ -735,9 +818,7 @@ export function AppProvider({ children }) {
             error.message ||
               "Failed to update quantity"
           );
-
         }
-
       },
       [
         userId,
@@ -755,43 +836,45 @@ export function AppProvider({ children }) {
   const toggleWishlist =
     useCallback(
       (product) => {
-
         if (!product) {
           return;
         }
 
-        setWishlist((prev) => {
+        const productId =
+          product.productId ??
+          product.id ??
+          product._id;
 
+        setWishlist((prev) => {
           const exists =
-            prev.includes(
-              product.id
+            prev.some(
+              (id) =>
+                String(id) ===
+                String(productId)
             );
 
           let updatedWishlist;
 
           if (exists) {
-
             updatedWishlist =
               prev.filter(
                 (id) =>
-                  id !== product.id
+                  String(id) !==
+                  String(productId)
               );
 
             showToast(
               "♡ Removed from wishlist"
             );
-
           } else {
-
             updatedWishlist = [
               ...prev,
-              product.id,
+              productId,
             ];
 
             showToast(
               "♥ Added to wishlist"
             );
-
           }
 
           localStorage.setItem(
@@ -802,9 +885,7 @@ export function AppProvider({ children }) {
           );
 
           return updatedWishlist;
-
         });
-
       },
       [showToast]
     );
@@ -816,13 +897,12 @@ export function AppProvider({ children }) {
   const removeFromWishlist =
     useCallback(
       (id) => {
-
         setWishlist((prev) => {
-
           const updatedWishlist =
             prev.filter(
               (productId) =>
-                productId !== id
+                String(productId) !==
+                String(id)
             );
 
           localStorage.setItem(
@@ -833,13 +913,11 @@ export function AppProvider({ children }) {
           );
 
           return updatedWishlist;
-
         });
 
         showToast(
           "♡ Removed from wishlist"
         );
-
       },
       [showToast]
     );
@@ -850,7 +928,6 @@ export function AppProvider({ children }) {
 
   const clearWishlist =
     useCallback(() => {
-
       setWishlist([]);
 
       localStorage.removeItem(
@@ -860,39 +937,40 @@ export function AppProvider({ children }) {
       showToast(
         "✓ Wishlist cleared"
       );
-
     }, [showToast]);
 
   // ==========================================
   // CART ITEMS
   // ==========================================
 
-  const cartItems =
-    useMemo(() => {
+  const cartItems = useMemo(() => {
+    return cart
+      .map((item) => {
+        const product =
+          allProducts.find(
+            (p) =>
+              String(
+                p.productId ??
+                  p.id ??
+                  p._id
+              ) ===
+              String(item.id)
+          );
 
-      return cart
-        .map((item) => {
+        if (!product) {
+          return null;
+        }
 
-          const product =
-            allProducts.find(
-              (p) =>
-                String(p.id) ===
-                String(item.id)
-            );
-
-          if (!product) {
-            return null;
-          }
-
-          return {
-            ...product,
-            qty: item.qty,
-          };
-
-        })
-        .filter(Boolean);
-
-    }, [cart]);
+        return {
+          ...product,
+          qty: item.qty,
+        };
+      })
+      .filter(Boolean);
+  }, [
+    cart,
+    allProducts,
+  ]);
 
   // ==========================================
   // WISHLIST ITEMS
@@ -900,33 +978,35 @@ export function AppProvider({ children }) {
 
   const wishlistItems =
     useMemo(() => {
-
       return allProducts.filter(
         (product) =>
-          wishlist.includes(
-            product.id
+          wishlist.some(
+            (id) =>
+              String(id) ===
+              String(
+                product.productId ??
+                  product.id ??
+                  product._id
+              )
           )
       );
-
-    }, [wishlist]);
+    }, [
+      wishlist,
+      allProducts,
+    ]);
 
   // ==========================================
   // CART COUNT
   // ==========================================
 
-  const cartCount =
-    useMemo(() => {
-
-      return cart.reduce(
-        (total, item) =>
-          total +
-          Number(
-            item.qty || 0
-          ),
-        0
-      );
-
-    }, [cart]);
+  const cartCount = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total +
+        Number(item.qty || 0),
+      0
+    );
+  }, [cart]);
 
   // ==========================================
   // WISHLIST COUNT
@@ -934,9 +1014,7 @@ export function AppProvider({ children }) {
 
   const wishlistCount =
     useMemo(() => {
-
       return wishlist.length;
-
     }, [wishlist]);
 
   // ==========================================
@@ -945,19 +1023,13 @@ export function AppProvider({ children }) {
 
   const cartSubtotal =
     useMemo(() => {
-
       return cartItems.reduce(
         (total, item) =>
           total +
-          Number(
-            item.price || 0
-          ) *
-            Number(
-              item.qty || 0
-            ),
+          Number(item.price || 0) *
+            Number(item.qty || 0),
         0
       );
-
     }, [cartItems]);
 
   // ==========================================
@@ -966,15 +1038,15 @@ export function AppProvider({ children }) {
 
   const filteredProducts =
     useMemo(() => {
-
       let list = [
         ...allProducts,
       ];
 
+      // ======================================
       // SEARCH
+      // ======================================
 
       if (search.trim()) {
-
         const q =
           search
             .trim()
@@ -982,7 +1054,6 @@ export function AppProvider({ children }) {
 
         list = list.filter(
           (product) => {
-
             return (
               String(
                 product.name || ""
@@ -991,49 +1062,49 @@ export function AppProvider({ children }) {
                 .includes(q) ||
 
               String(
-                product.category ||
-                  ""
+                product.category || ""
               )
                 .toLowerCase()
                 .includes(q) ||
 
               String(
-                product.state ||
-                  ""
+                product.state || ""
               )
                 .toLowerCase()
                 .includes(q) ||
 
               String(
-                product.description ||
-                  ""
+                product.description || ""
               )
                 .toLowerCase()
                 .includes(q)
             );
-
           }
         );
-
       }
 
+      // ======================================
       // CATEGORY
+      // ======================================
 
       if (
-        activeCategory !==
-        "all"
+        activeCategory !== "all"
       ) {
-
         list =
           list.filter(
             (product) =>
-              product.category ===
-              activeCategory
+              String(
+                product.category || ""
+              ).toLowerCase() ===
+              String(
+                activeCategory
+              ).toLowerCase()
           );
-
       }
 
+      // ======================================
       // PRICE
+      // ======================================
 
       list =
         list.filter(
@@ -1046,13 +1117,13 @@ export function AppProvider({ children }) {
             )
         );
 
+      // ======================================
       // STATE
+      // ======================================
 
       if (
-        activeStates.length >
-        0
+        activeStates.length > 0
       ) {
-
         list =
           list.filter(
             (product) =>
@@ -1060,13 +1131,13 @@ export function AppProvider({ children }) {
                 product.state
               )
           );
-
       }
 
+      // ======================================
       // RATING
+      // ======================================
 
       if (minRating > 0) {
-
         list =
           list.filter(
             (product) =>
@@ -1074,59 +1145,39 @@ export function AppProvider({ children }) {
                 product.rating || 0
               ) >= minRating
           );
-
       }
 
+      // ======================================
       // SORT
+      // ======================================
 
       switch (sortBy) {
-
         case "price-asc":
-
           list.sort(
             (a, b) =>
-              Number(
-                a.price || 0
-              ) -
-              Number(
-                b.price || 0
-              )
+              Number(a.price || 0) -
+              Number(b.price || 0)
           );
-
           break;
 
         case "price-desc":
-
           list.sort(
             (a, b) =>
-              Number(
-                b.price || 0
-              ) -
-              Number(
-                a.price || 0
-              )
+              Number(b.price || 0) -
+              Number(a.price || 0)
           );
-
           break;
 
         case "rating":
-
           list.sort(
             (a, b) =>
-              Number(
-                b.rating || 0
-              ) -
-              Number(
-                a.rating || 0
-              )
+              Number(b.rating || 0) -
+              Number(a.rating || 0)
           );
-
           break;
 
         case "newest":
-
           list.reverse();
-
           break;
 
         case "recommended":
@@ -1135,8 +1186,8 @@ export function AppProvider({ children }) {
       }
 
       return list;
-
     }, [
+      allProducts,
       search,
       activeCategory,
       maxPrice,
@@ -1146,37 +1197,92 @@ export function AppProvider({ children }) {
     ]);
 
   // ==========================================
+  // DEBUG PRODUCT COUNTS
+  // ==========================================
+
+  useEffect(() => {
+    console.log(
+      "================================"
+    );
+
+    console.log(
+      "ALL PRODUCTS:",
+      allProducts.length
+    );
+
+    console.log(
+      "FILTERED PRODUCTS:",
+      filteredProducts.length
+    );
+
+    console.log(
+      "SEARCH:",
+      search
+    );
+
+    console.log(
+      "CATEGORY:",
+      activeCategory
+    );
+
+    console.log(
+      "MAX PRICE:",
+      maxPrice
+    );
+
+    console.log(
+      "STATES:",
+      activeStates
+    );
+
+    console.log(
+      "MIN RATING:",
+      minRating
+    );
+
+    console.log(
+      "SORT:",
+      sortBy
+    );
+
+    console.log(
+      "================================"
+    );
+  }, [
+    allProducts,
+    filteredProducts,
+    search,
+    activeCategory,
+    maxPrice,
+    activeStates,
+    minRating,
+    sortBy,
+  ]);
+
+  // ==========================================
   // STATE FILTER
   // ==========================================
 
   const toggleStateFilter =
     useCallback(
       (state) => {
-
         setActiveStates(
           (prev) => {
-
             if (
-              prev.includes(
-                state
-              )
+              prev.includes(state)
             ) {
-
               return prev.filter(
                 (item) =>
                   item !== state
               );
-
             }
 
             return [
               ...prev,
               state,
             ];
-
           }
         );
-
       },
       []
     );
@@ -1187,25 +1293,17 @@ export function AppProvider({ children }) {
 
   const clearFilters =
     useCallback(() => {
+      setActiveCategory("all");
 
-      setActiveCategory(
-        "all"
-      );
-
-      setMaxPrice(
-        10000
-      );
+      setMaxPrice(10000);
 
       setActiveStates([]);
 
       setMinRating(0);
 
-      setSortBy(
-        "recommended"
-      );
+      setSortBy("recommended");
 
       setSearch("");
-
     }, []);
 
   // ==========================================
@@ -1214,7 +1312,6 @@ export function AppProvider({ children }) {
 
   const logout =
     useCallback(() => {
-
       localStorage.removeItem(
         "token"
       );
@@ -1240,7 +1337,6 @@ export function AppProvider({ children }) {
       setCartOpen(false);
 
       setCheckoutOpen(false);
-
     }, []);
 
   // ==========================================
@@ -1248,83 +1344,112 @@ export function AppProvider({ children }) {
   // ==========================================
 
   const value = {
+    // PRODUCTS
+
+    allProducts,
+
+    filteredProducts,
 
     // AUTH
 
     token,
+
     userId,
+
     user,
+
     isLoggedIn,
 
     login,
+
     logout,
 
     // CART
 
     cart,
+
     cartItems,
+
     cartCount,
+
     cartSubtotal,
 
     cartOpen,
+
     setCartOpen,
 
     addToCart,
+
     removeFromCart,
+
     updateQty,
+
     clearCart,
 
     // CHECKOUT
 
     checkoutOpen,
+
     setCheckoutOpen,
 
     // WISHLIST
 
     wishlist,
+
     wishlistItems,
+
     wishlistCount,
 
     wishlistOpen,
+
     setWishlistOpen,
 
     toggleWishlist,
+
     removeFromWishlist,
+
     clearWishlist,
 
     // SEARCH
 
     search,
+
     setSearch,
 
     // FILTERS
 
     activeCategory,
+
     setActiveCategory,
 
     maxPrice,
+
     setMaxPrice,
 
     activeStates,
+
     toggleStateFilter,
 
     minRating,
+
     setMinRating,
 
     sortBy,
+
     setSortBy,
 
     clearFilters,
 
-    filteredProducts,
-
     filterDrawerOpen,
+
     setFilterDrawerOpen,
 
     // TOAST
 
     toasts,
+
     showToast,
+
     dismissToast,
   };
 
@@ -1342,18 +1467,13 @@ export function AppProvider({ children }) {
 // ==========================================
 
 export function useApp() {
-
   const context =
-    useContext(
-      AppContext
-    );
+    useContext(AppContext);
 
   if (!context) {
-
     throw new Error(
       "useApp must be used inside AppProvider"
     );
-
   }
 
   return context;
