@@ -13,8 +13,7 @@ const AppContext = createContext(null);
 // ==========================================
 // BACKEND URL
 // ==========================================
-
-const API_URL = "http://localhost:5000";
+const API_URL = " https://kalakart-y527.onrender.com";
 
 // ==========================================
 // APP PROVIDER
