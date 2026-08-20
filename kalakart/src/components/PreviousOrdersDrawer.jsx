@@ -3,7 +3,7 @@ import { useApp } from "../store";
 import "./Drawer.css";
 import "./PreviousOrdersDrawer.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://kalakart-y527.onrender.com";
 
 export default function PreviousOrdersDrawer() {
 

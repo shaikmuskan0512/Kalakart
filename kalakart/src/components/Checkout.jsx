@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../store";
 import "./Checkout.css";
-const API_URL = "http://localhost:5000";
+const API_URL = "https://kalakart-y527.onrender.com";
 
 export default function Checkout() {
   const navigate = useNavigate();

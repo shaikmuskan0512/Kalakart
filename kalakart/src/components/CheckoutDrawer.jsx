@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useApp } from "../store";
 import "./CheckoutDrawer.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://kalakart-y527.onrender.com";
 
 export default function CheckoutDrawer() {
   const {

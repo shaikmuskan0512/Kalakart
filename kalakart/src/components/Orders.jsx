@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Orders.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://kalakart-y527.onrender.com";
 
 export default function Orders() {
   const navigate = useNavigate();
