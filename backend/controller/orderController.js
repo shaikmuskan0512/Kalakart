@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import Order from "../models/order.js";
 import User from "../models/user.js";
-import Cart from "../models/cart.js";
+import Cart from "../models/Cart.js";
+
 
 // =====================================================
 // CREATE ORDER
