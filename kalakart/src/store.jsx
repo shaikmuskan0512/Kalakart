@@ -13,7 +13,8 @@ const AppContext = createContext(null);
 // ==========================================
 // BACKEND URL
 // ==========================================
-const API_URL = " https://kalakart-y527.onrender.com";
+
+const API_URL = "https://kalakart-y527.onrender.com";
 
 // ==========================================
 // APP PROVIDER
@@ -21,7 +22,7 @@ const API_URL = " https://kalakart-y527.onrender.com";
 
 export function AppProvider({ children }) {
   // ==========================================
-  // PRODUCTS FROM MONGODB
+  // PRODUCTS
   // ==========================================
 
   const [allProducts, setAllProducts] = useState([]);
@@ -41,9 +42,7 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
 
-    if (!savedUser) {
-      return null;
-    }
+    if (!savedUser) return null;
 
     try {
       return JSON.parse(savedUser);
@@ -81,7 +80,7 @@ export function AppProvider({ children }) {
   );
 
   // ==========================================
-  // CART
+  // CART STATE
   // ==========================================
 
   const [cart, setCart] = useState([]);
@@ -194,56 +193,49 @@ export function AppProvider({ children }) {
   };
 
   // ==========================================
-  // LOAD PRODUCTS FROM MONGODB
+  // LOAD PRODUCTS
   // ==========================================
 
   useEffect(() => {
     const loadProducts = async () => {
-      console.log(
-        "================================"
-      );
-
-      console.log(
-        "LOADING PRODUCTS FROM MONGODB"
-      );
-
-      console.log(
-        "PRODUCT API:",
-        `${API_URL}/api/products`
-      );
-
-      console.log(
-        "================================"
-      );
-
       try {
+        console.log(
+          "================================"
+        );
+
+        console.log(
+          "LOADING PRODUCTS FROM RENDER"
+        );
+
+        console.log(
+          "PRODUCT API:",
+          `${API_URL}/api/products`
+        );
+
+        console.log(
+          "================================"
+        );
+
         const response = await fetch(
           `${API_URL}/api/products`,
           {
             method: "GET",
-
             headers: {
-              "Content-Type":
-                "application/json",
+              Accept: "application/json",
             },
           }
         );
 
         console.log(
-          "PRODUCT RESPONSE STATUS:",
+          "PRODUCT STATUS:",
           response.status
-        );
-
-        console.log(
-          "PRODUCT RESPONSE OK:",
-          response.ok
         );
 
         const data =
           await getResponseData(response);
 
         console.log(
-          "PRODUCTS RESPONSE:",
+          "PRODUCT RESPONSE:",
           data
         );
 
@@ -253,10 +245,6 @@ export function AppProvider({ children }) {
               `Failed to fetch products (${response.status})`
           );
         }
-
-        // ======================================
-        // HANDLE DIFFERENT API RESPONSE FORMATS
-        // ======================================
 
         let productsData = [];
 
@@ -271,20 +259,6 @@ export function AppProvider({ children }) {
         ) {
           productsData = data.data;
         }
-
-        console.log(
-          "PRODUCT ARRAY:",
-          productsData
-        );
-
-        console.log(
-          "PRODUCT COUNT:",
-          productsData.length
-        );
-
-        // ======================================
-        // NORMALIZE PRODUCTS
-        // ======================================
 
         const normalizedProducts =
           productsData.map((product) => ({
@@ -301,7 +275,8 @@ export function AppProvider({ children }) {
               product._id,
 
             name:
-              product.name || "Unnamed Product",
+              product.name ||
+              "Unnamed Product",
 
             description:
               product.description || "",
@@ -311,8 +286,8 @@ export function AppProvider({ children }) {
 
             originalPrice:
               Number(
-                product.originalPrice ||
-                  product.price ||
+                product.originalPrice ??
+                  product.price ??
                   0
               ),
 
@@ -333,11 +308,6 @@ export function AppProvider({ children }) {
           }));
 
         console.log(
-          "NORMALIZED PRODUCTS:",
-          normalizedProducts
-        );
-
-        console.log(
           "FINAL PRODUCT COUNT:",
           normalizedProducts.length
         );
@@ -347,16 +317,8 @@ export function AppProvider({ children }) {
         );
       } catch (error) {
         console.error(
-          "================================"
-        );
-
-        console.error(
           "PRODUCT LOAD ERROR:",
           error
-        );
-
-        console.error(
-          "================================"
         );
 
         setAllProducts([]);
@@ -367,7 +329,7 @@ export function AppProvider({ children }) {
   }, []);
 
   // ==========================================
-  // FORMAT BACKEND CART
+  // FORMAT CART
   // ==========================================
 
   const formatCart = useCallback(
@@ -402,7 +364,7 @@ export function AppProvider({ children }) {
   );
 
   // ==========================================
-  // LOAD CART FROM MONGODB
+  // LOAD CART
   // ==========================================
 
   useEffect(() => {
@@ -424,8 +386,7 @@ export function AppProvider({ children }) {
             method: "GET",
 
             headers: {
-              "Content-Type":
-                "application/json",
+              Accept: "application/json",
 
               ...(token
                 ? {
@@ -475,7 +436,7 @@ export function AppProvider({ children }) {
   ]);
 
   // ==========================================
-  // CART - ADD
+  // ADD TO CART
   // ==========================================
 
   const addToCart = useCallback(
@@ -498,8 +459,14 @@ export function AppProvider({ children }) {
           product.id ??
           product._id;
 
+        if (!productId) {
+          throw new Error(
+            "Invalid product ID"
+          );
+        }
+
         console.log(
-          "Adding product:",
+          "ADDING PRODUCT:",
           productId
         );
 
@@ -511,6 +478,9 @@ export function AppProvider({ children }) {
 
               headers: {
                 "Content-Type":
+                  "application/json",
+
+                Accept:
                   "application/json",
 
                 ...(token
@@ -573,24 +543,18 @@ export function AppProvider({ children }) {
   );
 
   // ==========================================
-  // CART - REMOVE
+  // REMOVE FROM CART
   // ==========================================
 
   const removeFromCart =
     useCallback(
       async (id) => {
-        if (!userId) {
-          return;
-        }
+        if (!userId) return;
 
         if (
           id === undefined ||
           id === null
         ) {
-          console.error(
-            "Cannot remove cart item: ID is undefined"
-          );
-
           showToast(
             "Invalid product"
           );
@@ -606,6 +570,9 @@ export function AppProvider({ children }) {
                 method: "DELETE",
 
                 headers: {
+                  Accept:
+                    "application/json",
+
                   ...(token
                     ? {
                         Authorization:
@@ -656,15 +623,14 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
-  // CART - CLEAR
+  // CLEAR CART
   // ==========================================
 
   const clearCart =
     useCallback(
       async () => {
-        setCart([]);
-
         if (!userId) {
+          setCart([]);
           return true;
         }
 
@@ -676,6 +642,9 @@ export function AppProvider({ children }) {
                 method: "DELETE",
 
                 headers: {
+                  Accept:
+                    "application/json",
+
                   ...(token
                     ? {
                         Authorization:
@@ -723,24 +692,18 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
-  // CART - UPDATE QUANTITY
+  // UPDATE QUANTITY
   // ==========================================
 
   const updateQty =
     useCallback(
       async (id, delta) => {
-        if (!userId) {
-          return;
-        }
+        if (!userId) return;
 
         if (
           id === undefined ||
           id === null
         ) {
-          console.error(
-            "Cannot update cart: ID is undefined"
-          );
-
           return;
         }
 
@@ -752,11 +715,6 @@ export function AppProvider({ children }) {
           );
 
         if (!currentItem) {
-          console.error(
-            "Cart item not found:",
-            id
-          );
-
           return;
         }
 
@@ -776,6 +734,9 @@ export function AppProvider({ children }) {
 
                 headers: {
                   "Content-Type":
+                    "application/json",
+
+                  Accept:
                     "application/json",
 
                   ...(token
@@ -829,15 +790,174 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
-  // WISHLIST - TOGGLE
+  // PLACE ORDER
+  // ==========================================
+
+  const placeOrder = useCallback(
+    async (orderData) => {
+      if (!userId) {
+        throw new Error(
+          "Please login before placing an order"
+        );
+      }
+
+      if (!token) {
+        throw new Error(
+          "Authentication token is missing. Please login again."
+        );
+      }
+
+      if (!cartItems.length) {
+        throw new Error(
+          "Your cart is empty"
+        );
+      }
+
+      try {
+        console.log(
+          "================================"
+        );
+
+        console.log(
+          "PLACING ORDER"
+        );
+
+        console.log(
+          "ORDER API:",
+          `${API_URL}/api/orders/${userId}`
+        );
+
+        console.log(
+          "ORDER DATA:",
+          orderData
+        );
+
+        console.log(
+          "================================"
+        );
+
+        const items = cartItems.map(
+          (item) => ({
+            product:
+              item._id ||
+              item.productId ||
+              item.id,
+
+            quantity:
+              Number(item.qty || 1),
+
+            price:
+              Number(item.price || 0),
+          })
+        );
+
+        const totalAmount =
+          items.reduce(
+            (total, item) =>
+              total +
+              item.price *
+                item.quantity,
+            0
+          );
+
+        const payload = {
+          items,
+          totalAmount,
+
+          shippingAddress:
+            orderData.shippingAddress ||
+            orderData.address,
+
+          paymentMethod:
+            orderData.paymentMethod ||
+            "COD",
+        };
+
+        console.log(
+          "FINAL ORDER PAYLOAD:",
+          payload
+        );
+
+        const response =
+          await fetch(
+            `${API_URL}/api/orders/${userId}`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Accept:
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body: JSON.stringify(
+                payload
+              ),
+            }
+          );
+
+        console.log(
+          "ORDER RESPONSE STATUS:",
+          response.status
+        );
+
+        const data =
+          await getResponseData(response);
+
+        console.log(
+          "ORDER RESPONSE:",
+          data
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              `Order failed (${response.status})`
+          );
+        }
+
+        // Clear frontend cart
+        setCart([]);
+
+        setCheckoutOpen(false);
+
+        setCartOpen(false);
+
+        showToast(
+          "✓ Order placed successfully"
+        );
+
+        return data;
+      } catch (error) {
+        console.error(
+          "PLACE ORDER ERROR:",
+          error
+        );
+
+        throw error;
+      }
+    },
+    [
+      userId,
+      token,
+      cartItems,
+      showToast,
+    ]
+  );
+
+  // ==========================================
+  // WISHLIST TOGGLE
   // ==========================================
 
   const toggleWishlist =
     useCallback(
       (product) => {
-        if (!product) {
-          return;
-        }
+        if (!product) return;
 
         const productId =
           product.productId ??
@@ -890,7 +1010,7 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
-  // WISHLIST - REMOVE
+  // REMOVE WISHLIST
   // ==========================================
 
   const removeFromWishlist =
@@ -922,7 +1042,7 @@ export function AppProvider({ children }) {
     );
 
   // ==========================================
-  // WISHLIST - CLEAR
+  // CLEAR WISHLIST
   // ==========================================
 
   const clearWishlist =
@@ -956,9 +1076,7 @@ export function AppProvider({ children }) {
               String(item.id)
           );
 
-        if (!product) {
-          return null;
-        }
+        if (!product) return null;
 
         return {
           ...product,
@@ -1041,9 +1159,7 @@ export function AppProvider({ children }) {
         ...allProducts,
       ];
 
-      // ======================================
       // SEARCH
-      // ======================================
 
       if (search.trim()) {
         const q =
@@ -1052,39 +1168,31 @@ export function AppProvider({ children }) {
             .toLowerCase();
 
         list = list.filter(
-          (product) => {
-            return (
-              String(
-                product.name || ""
-              )
-                .toLowerCase()
-                .includes(q) ||
-
-              String(
-                product.category || ""
-              )
-                .toLowerCase()
-                .includes(q) ||
-
-              String(
-                product.state || ""
-              )
-                .toLowerCase()
-                .includes(q) ||
-
-              String(
-                product.description || ""
-              )
-                .toLowerCase()
-                .includes(q)
-            );
-          }
+          (product) =>
+            String(
+              product.name || ""
+            )
+              .toLowerCase()
+              .includes(q) ||
+            String(
+              product.category || ""
+            )
+              .toLowerCase()
+              .includes(q) ||
+            String(
+              product.state || ""
+            )
+              .toLowerCase()
+              .includes(q) ||
+            String(
+              product.description || ""
+            )
+              .toLowerCase()
+              .includes(q)
         );
       }
 
-      // ======================================
       // CATEGORY
-      // ======================================
 
       if (
         activeCategory !== "all"
@@ -1101,9 +1209,7 @@ export function AppProvider({ children }) {
           );
       }
 
-      // ======================================
       // PRICE
-      // ======================================
 
       list =
         list.filter(
@@ -1116,9 +1222,7 @@ export function AppProvider({ children }) {
             )
         );
 
-      // ======================================
-      // STATE
-      // ======================================
+      // STATES
 
       if (
         activeStates.length > 0
@@ -1132,9 +1236,7 @@ export function AppProvider({ children }) {
           );
       }
 
-      // ======================================
       // RATING
-      // ======================================
 
       if (minRating > 0) {
         list =
@@ -1146,9 +1248,7 @@ export function AppProvider({ children }) {
           );
       }
 
-      // ======================================
       // SORT
-      // ======================================
 
       switch (sortBy) {
         case "price-asc":
@@ -1179,7 +1279,6 @@ export function AppProvider({ children }) {
           list.reverse();
           break;
 
-        case "recommended":
         default:
           break;
       }
@@ -1196,70 +1295,7 @@ export function AppProvider({ children }) {
     ]);
 
   // ==========================================
-  // DEBUG PRODUCT COUNTS
-  // ==========================================
-
-  useEffect(() => {
-    console.log(
-      "================================"
-    );
-
-    console.log(
-      "ALL PRODUCTS:",
-      allProducts.length
-    );
-
-    console.log(
-      "FILTERED PRODUCTS:",
-      filteredProducts.length
-    );
-
-    console.log(
-      "SEARCH:",
-      search
-    );
-
-    console.log(
-      "CATEGORY:",
-      activeCategory
-    );
-
-    console.log(
-      "MAX PRICE:",
-      maxPrice
-    );
-
-    console.log(
-      "STATES:",
-      activeStates
-    );
-
-    console.log(
-      "MIN RATING:",
-      minRating
-    );
-
-    console.log(
-      "SORT:",
-      sortBy
-    );
-
-    console.log(
-      "================================"
-    );
-  }, [
-    allProducts,
-    filteredProducts,
-    search,
-    activeCategory,
-    maxPrice,
-    activeStates,
-    minRating,
-    sortBy,
-  ]);
-
-  // ==========================================
-  // STATE FILTER
+  // FILTER FUNCTIONS
   // ==========================================
 
   const toggleStateFilter =
@@ -1286,22 +1322,13 @@ export function AppProvider({ children }) {
       []
     );
 
-  // ==========================================
-  // CLEAR FILTERS
-  // ==========================================
-
   const clearFilters =
     useCallback(() => {
       setActiveCategory("all");
-
       setMaxPrice(10000);
-
       setActiveStates([]);
-
       setMinRating(0);
-
       setSortBy("recommended");
-
       setSearch("");
     }, []);
 
@@ -1324,17 +1351,13 @@ export function AppProvider({ children }) {
       );
 
       setToken(null);
-
       setUserId(null);
-
       setUser(null);
 
       setCart([]);
-
       setWishlist([]);
 
       setCartOpen(false);
-
       setCheckoutOpen(false);
     }, []);
 
@@ -1343,112 +1366,70 @@ export function AppProvider({ children }) {
   // ==========================================
 
   const value = {
+    // API
+    API_URL,
+
     // PRODUCTS
-
     allProducts,
-
     filteredProducts,
 
     // AUTH
-
     token,
-
     userId,
-
     user,
-
     isLoggedIn,
-
     login,
-
     logout,
 
     // CART
-
     cart,
-
     cartItems,
-
     cartCount,
-
     cartSubtotal,
-
     cartOpen,
-
     setCartOpen,
-
     addToCart,
-
     removeFromCart,
-
     updateQty,
-
     clearCart,
 
     // CHECKOUT
-
     checkoutOpen,
-
     setCheckoutOpen,
+    placeOrder,
 
     // WISHLIST
-
     wishlist,
-
     wishlistItems,
-
     wishlistCount,
-
     wishlistOpen,
-
     setWishlistOpen,
-
     toggleWishlist,
-
     removeFromWishlist,
-
     clearWishlist,
 
     // SEARCH
-
     search,
-
     setSearch,
 
     // FILTERS
-
     activeCategory,
-
     setActiveCategory,
-
     maxPrice,
-
     setMaxPrice,
-
     activeStates,
-
     toggleStateFilter,
-
     minRating,
-
     setMinRating,
-
     sortBy,
-
     setSortBy,
-
     clearFilters,
-
     filterDrawerOpen,
-
     setFilterDrawerOpen,
 
     // TOAST
-
     toasts,
-
     showToast,
-
     dismissToast,
   };
 
@@ -1462,7 +1443,7 @@ export function AppProvider({ children }) {
 }
 
 // ==========================================
-// useApp HOOK
+// useApp
 // ==========================================
 
 export function useApp() {
