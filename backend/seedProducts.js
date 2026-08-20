@@ -326,7 +326,7 @@ const products = [
     stock: 15,
   },
   {
-    productId: 24,  
+    productId: 24,
     name: "Mysore Silk Saree",
     description:
       "Pure mulberry silk with a gold-zari border, known for its soft drape and subtle sheen.",
