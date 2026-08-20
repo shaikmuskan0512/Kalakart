@@ -3,12 +3,12 @@ import './Hero.css'
 
 const SLIDES = [
   {
-    image: 'https://loremflickr.com/1600/900/handloom,weaving,india?lock=201',
+    image: 'https://www.jdinstitute.edu.in/the-history-of-handloom-weaving-through-the-ages/',
     tag: 'The Weaver\'s Loom',
     caption: 'Every saree begins on a wooden loom, thread by patient thread.',
   },
   {
-    image: 'https://loremflickr.com/1600/900/saree,silk,india?lock=202',
+    image: 'https://theuseeshop.com/products/maroon-warm-silk-banarasi-katbandh-saree?srsltid=AfmBOopZpsODcIXxd4eG3JpJjIKOzONKaJXQym_plp0ia69uofV6Uv1J',
     tag: 'Silk & Zari',
     caption: 'Banarasi and Kanchipuram weaves, brocaded with real zari.',
   },
